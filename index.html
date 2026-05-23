@@ -1,70 +1,76 @@
-eeee
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YTDown Final</title>
+    <title>YTDown Pro</title>
     <style>
-        body { background: #0f0f0f; color: white; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
-        .box { width: 100%; max-width: 450px; background: #1a1a1a; padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        input { width: 100%; padding: 15px; border-radius: 8px; border: none; background: #000; color: #fff; margin-bottom: 10px; }
-        button { width: 100%; padding: 15px; border-radius: 8px; border: none; background: #ff0000; color: white; font-weight: bold; cursor: pointer; }
-        .res { margin-top: 20px; display: none; }
-        .dl-btn { display: block; background: #2ecc71; color: white; padding: 15px; text-decoration: none; border-radius: 8px; text-align: center; font-weight: bold; margin-top: 10px; }
+        :root { --bg: #0f0f0f; --card: #1a1a1a; --text: #ffffff; --accent: #ff0000; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto; padding: 20px; display: flex; justify-content: center; }
+        .box { width: 100%; max-width: 450px; background: var(--card); padding: 25px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        h1 { font-size: 24px; margin-bottom: 20px; text-align: center; }
+        input, select { width: 100%; padding: 14px; margin: 8px 0; border-radius: 8px; border: 1px solid #333; background: #000; color: #fff; box-sizing: border-box; }
+        button { width: 100%; padding: 14px; background: var(--accent); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        #res { margin-top: 25px; display: none; text-align: center; }
+        .thumb { width: 100%; border-radius: 8px; margin-bottom: 10px; }
+        .btn-dl { display: block; background: #2ecc71; color: white; padding: 15px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 15px; }
+        .legal { font-size: 11px; color: #666; margin-top: 25px; text-align: center; }
+        #status { margin-top: 15px; color: #ffcc00; font-size: 14px; text-align: center; }
     </style>
 </head>
 <body>
     <div class="box">
-        <h2>YTDown Pro</h2>
-        <input type="text" id="url" placeholder="Cole o link do YouTube aqui...">
-        <button id="btn">BUSCAR VÍDEO</button>
-        <div id="msg" style="margin-top:10px; color:#ffcc00; font-size:14px;"></div>
-        
-        <div id="res" class="res">
-            <img id="thumb" style="width:100%; border-radius:8px;">
-            <p id="nome" style="margin:10px 0; font-size:14px;"></p>
-            <select id="qualidade" style="width:100%; padding:10px; border-radius:5px;">
-                <option value="1080">1080p (Full HD)</option>
-                <option value="720" selected>720p (HD)</option>
-                <option value="480">480p</option>
-            </select>
-            <a id="link" class="dl-btn" href="#" target="_blank">BAIXAR VÍDEO</a>
+        <h1>YTDown Pro</h1>
+        <input type="text" id="url" placeholder="Cole o link do YouTube...">
+        <select id="qual">
+            <option value="1080">1080p</option>
+            <option value="720" selected>720p</option>
+        </select>
+        <button id="btnBuscar">Buscar vídeo</button>
+        <div id="status"></div>
+        <div id="res">
+            <img id="thumb" class="thumb">
+            <p id="titulo"></p>
+            <a id="btnDl" class="btn-dl" href="#" target="_blank">BAIXAR VÍDEO</a>
         </div>
+        <p class="legal">Use apenas com vídeos que você possui ou tem permissão para baixar.</p>
     </div>
 
     <script>
-        document.getElementById('btn').onclick = async () => {
+        // CONFIGURAÇÃO: Coloque aqui o endpoint da API externa (ex: Cobalt)
+        const API_DOWNLOAD_URL = "https://co.wuk.sh/api/json";
+
+        document.getElementById('btnBuscar').onclick = async () => {
             const url = document.getElementById('url').value;
-            const msg = document.getElementById('msg');
+            const status = document.getElementById('status');
             const res = document.getElementById('res');
             
-            if(!url.includes('youtu')) return alert('Link inválido');
+            if(!url.includes('youtu')) return alert('URL inválida');
             
-            msg.innerText = "Conectando ao motor de busca...";
+            status.innerText = "Buscando informações...";
             res.style.display = 'none';
 
             try {
-                // A API do Cobalt é a única que consegue ignorar restrições de IP
-                const resp = await fetch("https://co.wuk.sh/api/json", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ url: url, vQuality: "720" })
+                // Requisição para a API externa
+                const response = await fetch(API_DOWNLOAD_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ url: url, vQuality: document.getElementById('qual').value })
                 });
-                
-                const data = await resp.json();
-                
+
+                const data = await response.json();
+
                 if(data.url) {
                     document.getElementById('thumb').src = data.thumbnail || '';
-                    document.getElementById('nome').innerText = data.filename || 'Vídeo pronto';
-                    document.getElementById('link').href = data.url;
+                    document.getElementById('titulo').innerText = data.filename || 'Vídeo pronto';
+                    document.getElementById('btnDl').href = data.url;
                     res.style.display = 'block';
-                    msg.innerText = "";
+                    status.innerText = "";
                 } else {
-                    msg.innerText = "Erro: O YouTube bloqueou o acesso. Tente outro vídeo.";
+                    status.innerText = "Erro: Servidor externo não retornou o link. Tente outro vídeo ou qualidade.";
                 }
             } catch(e) {
-                msg.innerText = "Erro crítico: O servidor de download está offline ou bloqueado.";
+                status.innerText = "Erro: Servidor externo offline ou bloqueado pelo navegador. Verifique a configuração da API.";
             }
         };
     </script>
