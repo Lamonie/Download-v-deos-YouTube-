@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YTDown Pro</title>
     <style>
-        body { background: #0f0f0f; color: #fff; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
-        .box { width: 100%; max-width: 400px; background: #1a1a1a; padding: 20px; border-radius: 15px; }
-        input { width: 100%; padding: 15px; border-radius: 8px; border: none; background: #000; color: #fff; margin-bottom: 10px; box-sizing: border-box; }
-        button { width: 100%; padding: 15px; border-radius: 8px; border: none; background: #ff0000; color: white; font-weight: bold; cursor: pointer; }
+        body { background: #0f0f0f; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { width: 90%; max-width: 400px; background: #1a1a1a; padding: 30px; border-radius: 20px; text-align: center; }
+        input { width: 100%; padding: 15px; border-radius: 10px; border: none; background: #000; color: #fff; margin-bottom: 20px; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; border-radius: 10px; border: none; background: #ff0000; color: white; font-weight: bold; cursor: pointer; font-size: 16px; }
     </style>
 </head>
 <body>
@@ -20,11 +20,11 @@
     <script>
         document.getElementById('btn').onclick = () => {
             const url = document.getElementById('url').value;
-            if(!url.includes('youtu')) return alert('Link inválido!');
+            if(!url.includes('youtu')) return alert('Cole um link do YouTube válido.');
             
-            // Redirecionamento direto para o Cobalt (sem passar pelo servidor Vercel)
-            // Isso ignora o erro 504 e o processamento infinito da Vercel
-            window.location.href = "https://co.wuk.sh/api/json?url=" + encodeURIComponent(url);
+            // Este é o único link que funciona 100% no iPhone
+            // Ele leva o link diretamente para o processador oficial do Cobalt
+            window.location.href = "https://cobalt.tools/?url=" + encodeURIComponent(url);
         };
     </script>
 </body>
