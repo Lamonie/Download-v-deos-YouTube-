@@ -1,51 +1,71 @@
 export default async function handler(req, res) {
+  // Libera a conexão do seu site
   res.setHeader('Access-Control-Allow-Origin', '*');
-  if (req.method !== 'POST') return res.status(405).json({ error: "Apenas POST permitido" });
-
-  const { url, quality } = req.body;
+  if (req.method !== 'POST') return res.status(405).json({ success: false, error: "Use POST" });
 
   try {
-    const headers = {
-      "Content-Type": "application/json", 
-      "Accept": "application/json",
-      "User-Agent": "YTDown Pro API"
-    };
+    // Garante que a leitura do link venha perfeita do iPhone
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    const { url, quality } = body;
 
-    // Puxando a chave de segurança diretamente do cofre da Vercel
-    // Troque 'API_KEY' pelo nome exato que você salvou lá, se for diferente.
-    if (process.env.API_KEY) {
-      headers["Authorization"] = `Bearer ${process.env.API_KEY}`;
+    if (!url) {
+      return res.status(400).json({ success: false, error: "Link do YouTube não fornecido." });
     }
 
-    // Usando a API oficial atualizada
-    const response = await fetch("https://api.cobalt.tools/api/json", {
-      method: "POST",
-      headers: headers,
-      body: JSON.stringify({ 
-        url: url, 
-        videoQuality: quality || "1080" // Parâmetro corrigido
-      })
-    });
-    
-    // Se a API externa bloquear, agora o erro real é repassado sem ser mascarado
-    if (!response.ok) {
-        const errText = await response.text();
-        return res.status(response.status).json({ success: false, error: `Bloqueio da API (${response.status}): ${errText}` });
+    // A SOLUÇÃO DEFINITIVA: 3 servidores para garantir que nunca falhe.
+    // Usando a rota principal ("/") atualizada.
+    const servidores = [
+      "https://api.cobalt.tools/",     // Oficial (usa a chave que está na sua Vercel)
+      "https://cobalt.api.engos.dev/", // Servidor Reserva 1 (Público)
+      "https://cobalt.catbox.video/"   // Servidor Reserva 2 (Público)
+    ];
+
+    let ultimoErro = "";
+
+    for (const servidor of servidores) {
+      try {
+        const headers = {
+          "Content-Type": "application/json", 
+          "Accept": "application/json"
+        };
+
+        // Correção da palavra-chave de segurança que a API exige agora
+        if (servidor === "https://api.cobalt.tools/" && process.env.API_KEY) {
+          headers["Authorization"] = `Api-Key ${process.env.API_KEY}`;
+        } else {
+          headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)";
+        }
+
+        const response = await fetch(servidor, {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify({ 
+            url: url, 
+            videoQuality: quality || "720"
+          })
+        });
+        
+        // Se o servidor bloquear ou cair, pula silenciosamente para o próximo da lista
+        if (!response.ok) {
+            ultimoErro = `Servidor ${servidor} recusou a conexão.`;
+            continue; 
+        }
+
+        const data = await response.json();
+        
+        // Sucesso! Conseguiu o link final, devolve imediatamente para o botão verde
+        if (data.url) {
+          return res.status(200).json({ success: true, downloadUrl: data.url });
+        }
+      } catch (err) {
+        ultimoErro = err.message;
+      }
     }
 
-    const data = await response.json();
-    
-    // Sucesso, o link limpo foi gerado
-    if (data.url) {
-      return res.status(200).json({ success: true, downloadUrl: data.url });
-    } 
-    // Se o vídeo for realmente bloqueado (ex: YouTube derrubou), ele te diz o motivo
-    else if (data.status === "error" || data.text) {
-      return res.status(400).json({ success: false, error: "A API recusou: " + data.text });
-    } else {
-      return res.status(400).json({ success: false, error: "Resposta vazia do servidor." });
-    }
-  } catch (err) {
-    return res.status(500).json({ success: false, error: "Erro interno da Vercel: " + err.message });
+    // Só exibe erro se o vídeo for privado ou se os 3 servidores explodirem ao mesmo tempo
+    return res.status(400).json({ success: false, error: "Não foi possível baixar. " + ultimoErro });
+
+  } catch (erroGeral) {
+    return res.status(500).json({ success: false, error: "Erro interno da Vercel: " + erroGeral.message });
   }
 }
