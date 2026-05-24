@@ -19,10 +19,12 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, error: "Link do YouTube não fornecido." });
     }
 
+    // LISTA ATUALIZADA: Instâncias alternativas que costumam deixar o YouTube ativado
     const servidores = [
-      "https://api.cobalt.tools/",
+      "https://api.cobalt.kim/",
+      "https://cobalt-api.kwiatekmateusz.com/",
       "https://cobalt.api.engos.dev/",
-      "https://cobalt.catbox.video/"
+      "https://api.cobalt.tools/" // O oficial fica por último caso eles reativem
     ];
 
     let ultimoErro = "Nenhum servidor respondeu corretamente.";
@@ -31,13 +33,13 @@ export default async function handler(req, res) {
       try {
         const headers = {
           "Content-Type": "application/json",
-          "Accept": "application/json"
+          "Accept": "application/json",
+          "User-Agent": "Mozilla/5.0"
         };
 
+        // A sua chave da Vercel só serve no servidor oficial
         if (servidor === "https://api.cobalt.tools/" && process.env.API_KEY) {
           headers["Authorization"] = `Api-Key ${process.env.API_KEY}`;
-        } else {
-          headers["User-Agent"] = "Mozilla/5.0";
         }
 
         const response = await fetch(servidor, {
@@ -58,11 +60,13 @@ export default async function handler(req, res) {
           data = {};
         }
 
+        // Se o servidor bloquear (como o oficial fez), ele anota o erro e PULA para o próximo
         if (!response.ok) {
-          ultimoErro = `Servidor ${servidor} respondeu ${response.status}: ${texto}`;
-          continue;
+          ultimoErro = `O servidor ${servidor} recusou. Motivo: ${texto}`;
+          continue; 
         }
 
+        // Se deu certo, entrega o link para o botão verde e encerra!
         if (data.url) {
           return res.status(200).json({
             success: true,
@@ -70,15 +74,16 @@ export default async function handler(req, res) {
           });
         }
 
-        ultimoErro = `Servidor ${servidor} não retornou "url". Resposta: ${texto}`;
+        ultimoErro = `Servidor ${servidor} não retornou o arquivo.`;
       } catch (err) {
         ultimoErro = `Falha em ${servidor}: ${err.message}`;
       }
     }
 
+    // Se todos da lista falharem, ele mostra o erro do último
     return res.status(400).json({
       success: false,
-      error: "Não foi possível preparar o vídeo. " + ultimoErro
+      error: "Todos os servidores de download falharam ou bloquearam o YouTube. " + ultimoErro
     });
   } catch (erroGeral) {
     return res.status(500).json({
