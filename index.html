@@ -18,22 +18,13 @@
         <button id="btn">BAIXAR VÍDEO</button>
     </div>
     <script>
-        document.getElementById('btn').onclick = async () => {
+        document.getElementById('btn').onclick = () => {
             const url = document.getElementById('url').value;
-            const btn = document.getElementById('btn');
-            btn.innerText = "Processando...";
-            const res = await fetch('/api/download', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({url: url})
-            });
-            const data = await res.json();
-            if(data.redirect) {
-                window.location.href = data.redirect;
-            } else {
-                alert("Erro ao processar");
-                btn.innerText = "BAIXAR VÍDEO";
-            }
+            if(!url.includes('youtu')) return alert('Link inválido!');
+            
+            // Redirecionamento direto para o Cobalt (sem passar pelo servidor Vercel)
+            // Isso ignora o erro 504 e o processamento infinito da Vercel
+            window.location.href = "https://co.wuk.sh/api/json?url=" + encodeURIComponent(url);
         };
     </script>
 </body>
