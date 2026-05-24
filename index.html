@@ -13,9 +13,9 @@
         input, select { background: #000; color: #fff; border: 1px solid #333; }
         button { background: #e50914; color: #fff; font-weight: bold; cursor: pointer; transition: 0.3s; }
         button:hover { background: #b20710; }
-        #resultado { display: none; text-align: center; background: #222; padding: 20px; border-radius: 8px; margin-top: 10px; }
-        .btn-baixar { display: inline-block; background: #2ecc71; color: white; padding: 15px; text-decoration: none; border-radius: 8px; font-weight: bold; width: 100%; box-sizing: border-box; }
-        #statusTexto { font-size: 13px; color: #ffcc00; margin-bottom: 10px; }
+        
+        /* A mágica acontece aqui: uma área invisível que vai carregar o botão final */
+        #frameBaixar { width: 100%; height: 65px; border: none; display: none; margin-top: 10px; overflow: hidden; border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -25,76 +25,45 @@
         <label for="url">Link do Vídeo:</label>
         <input type="text" id="url" placeholder="Cole o link do YouTube aqui...">
         
-        <button id="btnGerar">Preparar Vídeo</button>
-        <p id="statusTexto"></p>
+        <label for="resolucao">Qualidade:</label>
+        <select id="resolucao">
+            <option value="1080">1080p (Alta Qualidade)</option>
+            <option value="720" selected>720p (Padrão)</option>
+            <option value="480">480p (Rápido)</option>
+        </select>
 
-        <div id="resultado">
-            <p style="margin-top: 0; color: #ccc;">✅ Vídeo processado com sucesso!</p>
-            <a id="linkDownload" class="btn-baixar" href="#" target="_blank">⬇️ Baixar Arquivo</a>
-        </div>
+        <button id="btnGerar">Preparar Vídeo</button>
+
+        <iframe id="frameBaixar" scrolling="no"></iframe>
     </div>
 
     <script>
-        document.getElementById('btnGerar').onclick = async () => {
+        document.getElementById('btnGerar').onclick = () => {
             const url = document.getElementById('url').value;
+            const resolucao = document.getElementById('resolucao').value;
             const btn = document.getElementById('btnGerar');
-            const resultado = document.getElementById('resultado');
-            const status = document.getElementById('statusTexto');
+            const frame = document.getElementById('frameBaixar');
             
             if(!url.includes('youtu')) return alert('Insira um link válido do YouTube.');
 
-            btn.innerText = "Conectando ao servidor...";
+            btn.innerText = "Processando... aguarde";
             btn.style.opacity = "0.7";
-            resultado.style.display = 'none';
-            status.innerText = "Iniciando processamento (pode levar alguns segundos)...";
+            
+            // Esconde o iframe temporariamente enquanto carrega o novo
+            frame.style.display = "none";
 
-            try {
-                // Passo 1: Pede ao Y2Mate/OceanSaver para iniciar a conversão
-                const req = await fetch(`https://p.oceansaver.in/ajax/download.php?format=mp4&url=${encodeURIComponent(url)}`);
-                const data = await req.json();
-                
-                if (data.success && data.id) {
-                    status.innerText = "Vídeo encontrado! Extraindo o arquivo...";
-                    
-                    // Passo 2: O site fica perguntando ao servidor a cada 3 segundos se o vídeo está pronto
-                    const checkInterval = setInterval(async () => {
-                        try {
-                            const progReq = await fetch(`https://p.oceansaver.in/ajax/progress.php?id=${data.id}`);
-                            const progData = await progReq.json();
-                            
-                            if (progData.success && progData.progress === 1000) {
-                                // O vídeo terminou de processar!
-                                clearInterval(checkInterval);
-                                document.getElementById('linkDownload').href = progData.download_url;
-                                resultado.style.display = 'block';
-                                status.innerText = "";
-                                btn.innerText = "Preparar Novo Vídeo";
-                                btn.style.opacity = "1";
-                            } else if (!progData.success) {
-                                clearInterval(checkInterval);
-                                status.innerText = "Erro: O servidor bloqueou este vídeo.";
-                                btn.innerText = "Tentar Novamente";
-                                btn.style.opacity = "1";
-                            } else {
-                                status.innerText = `Processando... ${progData.progress / 10}% concluído`;
-                            }
-                        } catch(e) {
-                            clearInterval(checkInterval);
-                            status.innerText = "Falha na conexão durante a extração.";
-                            btn.innerText = "Tentar Novamente";
-                            btn.style.opacity = "1";
-                        }
-                    }, 3000); // 3000 = 3 segundos
-                } else {
-                    status.innerText = "Vídeo protegido por direitos autorais ou inválido.";
-                    btn.innerText = "Tentar Novamente";
-                    btn.style.opacity = "1";
-                }
-            } catch(e) {
-                status.innerText = "Erro de conexão com o sistema de download.";
-                btn.innerText = "Tentar Novamente";
+            // Usamos a API robusta do Loader.to que permite escolher a resolução (f=resolucao)
+            // Isso ignora totalmente as travas da Vercel e o CORS do iPhone
+            const urlWidget = `https://loader.to/api/button/?url=${encodeURIComponent(url)}&f=${resolucao}`;
+            
+            frame.src = urlWidget;
+            
+            // Dá 1 segundo e exibe a janela com o botão de download
+            setTimeout(() => {
+                frame.style.display = "block";
+                btn.innerText = "Buscar Outro Vídeo";
                 btn.style.opacity = "1";
-            }
+            }, 1500);
         };
     </script>
 </body>
