@@ -6,56 +6,33 @@
     <title>YTDown Pro</title>
     <style>
         body { background: #0f0f0f; color: #fff; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
-        .box { width: 100%; max-width: 450px; background: #1a1a1a; padding: 20px; border-radius: 12px; }
-        input, button { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; box-sizing: border-box; }
-        input { background: #000; color: #fff; }
-        button { background: #ff0000; color: #fff; font-weight: bold; cursor: pointer; }
-        #res { display: none; margin-top: 20px; }
-        .btn-dl { background: #2ecc71; color: #fff; text-decoration: none; display: block; text-align: center; padding: 15px; border-radius: 8px; font-weight: bold; }
+        .box { width: 100%; max-width: 400px; background: #1a1a1a; padding: 20px; border-radius: 15px; }
+        input { width: 100%; padding: 15px; border-radius: 8px; border: none; background: #000; color: #fff; margin-bottom: 10px; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; border-radius: 8px; border: none; background: #ff0000; color: white; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
     <div class="box">
         <h2>YTDown Pro</h2>
         <input type="text" id="url" placeholder="Cole o link do YouTube...">
-        <button id="btnBuscar">Buscar Vídeo</button>
-        
-        <div id="res">
-            <p id="titulo" style="font-size: 14px;"></p>
-            <a id="btnDl" class="btn-dl" href="#" target="_blank">Baixar Vídeo</a>
-        </div>
+        <button id="btn">BAIXAR VÍDEO</button>
     </div>
-
     <script>
-        document.getElementById('btnBuscar').onclick = async () => {
+        document.getElementById('btn').onclick = async () => {
             const url = document.getElementById('url').value;
-            const btn = document.getElementById('btnBuscar');
-            if(!url.includes('youtu')) return alert('Link inválido');
-
+            const btn = document.getElementById('btn');
             btn.innerText = "Processando...";
-
-            try {
-                // Aqui está o segredo: chama a SUA API na Vercel
-                const response = await fetch('/api/download', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: url, quality: '720' })
-                });
-
-                const data = await response.json();
-
-                if(data.url) {
-                    document.getElementById('titulo').innerText = data.filename || "Vídeo pronto";
-                    document.getElementById('btnDl').href = data.url;
-                    document.getElementById('res').style.display = 'block';
-                    btn.innerText = "Buscar Vídeo";
-                } else {
-                    alert("Erro do servidor: " + (data.error || "Tente outro vídeo"));
-                    btn.innerText = "Buscar Vídeo";
-                }
-            } catch(e) {
-                alert("Erro de conexão. Verifique se o deploy na Vercel está online.");
-                btn.innerText = "Buscar Vídeo";
+            const res = await fetch('/api/download', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({url: url})
+            });
+            const data = await res.json();
+            if(data.redirect) {
+                window.location.href = data.redirect;
+            } else {
+                alert("Erro ao processar");
+                btn.innerText = "BAIXAR VÍDEO";
             }
         };
     </script>
